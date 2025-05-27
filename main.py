@@ -1,18 +1,18 @@
 #!/bin/python
 
-from sympy.abc import x, pi
-from sympy import tan
-
+from math import *
 # the graph structure of a node connecting to itself
 class SymGraph:
     # 1 in radians is 45 deg
-    def __init__(self, stop = 1000, n = 2, angle = 1, knots = []):
+    # angle takes in the slope of a line in radians and transforms it each time
+    def __init__(self, angle_func, stop = 1000, n = 2, angle = 1.0, knots = []):
         self.n = n
         self.angle = angle
         self.stop = stop
         # pointer to last graph
         self.knots = []
         self.knots += knots
+        self.angle_func = angle_func
 
         # circle is not needed but is visually shown in diagrams
         # now split into two
@@ -21,12 +21,11 @@ class SymGraph:
 
     # find symmetry of graph and generate split on next graph
     # angle is clockwise at centre point 0 starts at x=0
-    def symmetrize(self, angle):
+    def symmetrize(self, intersect):
         from sympy import sieve 
         # find intersect from circle using lines angle
-        intersect_line = (x * tan(angle))
         # calculate knots via previous lines
-        knot_points = [(x * tan(a), a) for a in self.knots]
+        knot_points = [a for a in self.knots]
         out_knot_points = knot_points
 
         # mirror the lines using intersect line
@@ -34,23 +33,27 @@ class SymGraph:
         if knot_points != []:
             for knot in knot_points:
                 # intersect line not intersect knots
-                if intersect_line != knot:
-                    reflected_line = x * tan(-angle + -knot[-1])
+                if intersect != knot:
+                    reflected_line = (-intersect+ -knot)
                     if not(reflected_line in knot_points):
-                        out_knot_points.append((reflected_line, -angle + -knot[-1]))
-                    if not(intersect_line in knot_points):
-                        out_knot_points.append((intersect_line, angle))
+                        out_knot_points.append(-intersect+ -knot)
+                    if not(intersect in knot_points):
+                        out_knot_points.append(intersect)
+                else: 
+                    print("hitting knot point")
         else:
-            out_knot_points.append(intersect_line)
+            out_knot_points.append(intersect)
 
-        n = len(out_knot_points) + 1
+        n = len(out_knot_points) 
 
         if n in sieve:
             print("Knot creation successful prime number {} achieved".format(str(n)))
         else:
             print("Failure at: {}".format(str(n)))
 
-        return SymGraph(stop = self.stop-1, n = n, angle=-angle, knots=out_knot_points)
+        return SymGraph(self.angle_func, stop = self.stop-1, n = n, 
+                        angle=self.angle_func(intersect), 
+                        knots=out_knot_points)
 
 # draw graphs with symmetry lines
 def draw_symmetry(graph):
@@ -78,8 +81,9 @@ def draw_symmetry(graph):
 
 
 def main():
-    SymGraph(stop=10)
-
+    while True:
+        funcstr = input("give function for prime testing (where a is var):")
+        SymGraph(eval("lambda a: "+funcstr), stop=10)
 
 if __name__ == "__main__":
     main()
